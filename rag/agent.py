@@ -63,7 +63,7 @@ except ModuleNotFoundError as exc:  # pragma: no cover - 环境问题引导
 MAX_TURNS = 6
 READ_MAX_CHARS = 8000
 
-SYSTEM_PROMPT = """你是这个 Obsidian 记忆库的检索助手。
+SYSTEM_PROMPT = """你是这个 personal agent 的记忆层。整个 agent 不止记忆一块，但你现在只负责这一块：它记住了什么、在哪、可信度多少。
 
 库分两层：
 - knowledge：知识卡片（`Cards/`）
@@ -283,7 +283,7 @@ class VaultAgent:
 
 
 def build_arg_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(description="最小检索 agent：连接记忆库 RAG")
+    parser = argparse.ArgumentParser(description="记忆层命令行：查这个 agent 记住了什么")
     parser.add_argument("question", nargs="?", help="问题；省略则进入交互模式")
     parser.add_argument("--provider", default="open-design", help="读取 ~/.pi/agent/models.json 的 provider")
     parser.add_argument("--model", default=None, help="模型名；省略则用 pi 的默认模型")

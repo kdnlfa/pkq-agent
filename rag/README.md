@@ -1,6 +1,22 @@
-# 记忆库 RAG 管线
+# 个人 Agent
 
-把 Obsidian 库变成可语义检索的记忆库。索引是**增量**的：只处理新增或修改过的文件。
+这个仓库是一个 **personal agent** 的代码。不是「一个能查笔记的 AI 助手」，也不是「一个记忆层」——记忆层是这个 agent 身上已经建好的那部分。
+
+建设顺序是由内向外：先把记忆层做实，再一层层往外长。先做记忆不是因为它简单，是因为 agent 得先记得住事，才谈得上主动做事；它也是唯一能用题目量出来的一层。
+
+| 层 | 管什么 | 状态 |
+|---|---|---|
+| 记忆层 | 记住了什么——卡片、关于你的事实、检索 | **已完成**，`rag/` + 库里的 `Cards/` `Memory/` |
+| 能力层 | 会做什么——可以反复调用的做法和 skill | 还没开始 |
+| 执行层 | 能碰到什么——读写文件、跑命令、上网、发消息 | 还没开始 |
+
+终点是一个 PA：能自己发起事、能动手、跨会话还记得住。从记忆往外走的每一步具体长什么样，还没定，定了再往这里加，不要提前编。
+
+下面整篇讲的是已经做好那一层（记忆层）。`rag/` 是这个 agent 现在的第一层代码，不是项目的边界。
+
+## 记忆层是什么
+
+把 Obsidian 库变成可语义检索的记忆。索引是**增量**的：只处理新增或修改过的文件。
 
 当前分块模式是 `card`：**一张卡一个 chunk，只嵌入关键信息**（标题 + description + 核心内容）。卡片全文不放进向量库，检索命中后由 Agent 按 `path` 读取整张 `.md`，这样既省索引空间，也能看到卡里的 `[[链接]]`。
 
@@ -24,7 +40,7 @@
 
 - Python 3.10+（当前机器为 3.12）
 - [uv](https://docs.astral.sh/uv/)（已安装）
-- 首次运行会自动下载 `BAAI/bge-small-zh-v1.5`（约 100MB）
+- 首次运行会自动下载 `google/embeddinggemma-300m`（约 1GB）。旧模型 `BAAI/bge-small-zh-v1.5` 一次只读 512 个字，装不下长卡片，已换掉
 
 ## 常用命令
 
@@ -96,6 +112,14 @@ Chroma（rag/.index/chroma）+ manifest（rag/.index/manifest.json，记录 sha2
 | `section` | 按 Markdown 标题切多个 chunk，每块带标题面包屑 | 长文档，需要精确到小节 |
 
 `chunking.embed_max_chars` 控制关键信息的截断长度；`max_chars` / `min_chars` / `overlap` 只在 `section` 模式下生效。切换模式会导致全量重建（配置签名变化）。
+
+## `pkq` 命令
+
+`pkq "<查询>"` 是记忆层的一个用法，不是项目本体。它靠 `C:\Users\wangm\.local\bin\pkq.cmd` 启动，那个脚本里写死了一个叫 `vaultrag` 的快捷方式，指向本目录。移动或重命名 `rag/` 之后 `pkq` 会失效，重建快捷方式即可：
+
+```powershell
+New-Item -ItemType SymbolicLink -Path "$env:USERPROFILE\.local\bin\vaultrag" -Target "<新的 rag 目录路径>"
+```
 
 ## 目录
 

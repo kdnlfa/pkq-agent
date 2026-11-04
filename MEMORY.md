@@ -11,6 +11,8 @@
 
 ## Project
 
+> 这里只放用户自己在做的项目。这个 agent 自己怎么长，记在 `AGENTS.md`。
+
 - [北宇治部活记录](Memory/project/北宇治部活记录.md) — AI 语音配音与视频系列项目
 - [PAOS 个人 AI 操作系统](Memory/project/PAOS个人AI操作系统.md) — 可复用能力与注意力管理
 
