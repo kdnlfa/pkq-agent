@@ -32,7 +32,9 @@ chunking:
   # card: 一张卡一个 chunk，只嵌入关键信息（标题 + description + 核心内容）
   # section: 按 Markdown 标题切成多个 chunk
   mode: card
-  embed_max_chars: 450
+  # 索引文本长度上限（字）。配合 2048 token 的嵌入模型，
+  # 能装下「核心内容 900 字 + 标题描述」的完整内容。
+  embed_max_chars: 1000
   # 以下参数仅在 section 模式下生效
   max_chars: 800
   min_chars: 40
@@ -41,10 +43,12 @@ chunking:
 embedding:
   # provider: fastembed | openai-compatible
   provider: fastembed
-  model: BAAI/bge-small-zh-v1.5
+  # embeddinggemma-300m：2048 token 上限（约 1360 汉字），多语言含中文。
+  # 旧模型 BAAI/bge-small-zh-v1.5 只有 512 token，装不下长卡片。
+  model: google/embeddinggemma-300m
   batch_size: 32
-  # BGE 中文模型建议在查询侧加指令前缀，文档侧不加
-  query_prefix: "为这个句子生成表示以用于检索相关文章："
+  # embeddinggemma 要求查询侧加任务前缀，文档侧加标题前缀（见模型描述）。
+  query_prefix: "task: search result | query: "
   document_prefix: ""
   hf_endpoint: "https://hf-mirror.com"
 
@@ -64,5 +68,9 @@ search:
   rrf_k: 60
   bm25_weight: 0.4
   dense_weight: 0.6
-  # 同一个文件最多保留几个 chunk；Agent 拿到路径后会读全文，所以默认 1
+  # 同一个文件最多保留几个 chunk
   max_per_path: 1
+  # 每条结果交给模型的摘要长度上限（字）。
+  # 900 与卡片「核心内容」上限对齐，模型一次就能看到完整内容，
+  # 不必反复调 read_note 读整张卡。
+  snippet_chars: 900

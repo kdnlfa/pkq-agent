@@ -1,4 +1,5 @@
 queries:
+  # ── 原有 12 条（保留，作为回归基线）──
   - query: "冥想时走神了怎么办"
     expected:
       - "Cards/冥想的核心是察觉走神并温和返回.md"
@@ -35,3 +36,267 @@ queries:
   - query: "怎么减少重复请示"
     expected:
       - "Cards/用票拟式决策卡片与决策清单减少重复请示.md"
+
+  # ── 睡眠与冥想 ──
+  - query: "睡前几个小时应该做什么"
+    expected:
+      - "Cards/睡前三小时逐步减少兴奋源的准备流程.md"
+  - query: "睡前洗澡为什么有助于入睡"
+    expected:
+      - "Cards/睡前温水沐浴与体温变化.md"
+  - query: "睡前脑子里事情太多放不下"
+    expected:
+      - "Cards/睡前通过记录待办减轻记忆负担.md"
+  - query: "卧室灯光该怎么调"
+    expected:
+      - "Cards/通过光线与卧室环境支持入睡.md"
+  - query: "睡前能不能玩手机"
+    expected:
+      - "Cards/用低刺激活动替代睡前屏幕信息流.md"
+  - query: "身体扫描怎么练"
+    expected:
+      - "Cards/用身体扫描觉察睡前的紧绷.md"
+  - query: "正念呼吸的具体步骤"
+    expected:
+      - "Cards/用正念呼吸练习注意力觉察.md"
+  - query: "冥想时心慌难受怎么办"
+    expected:
+      - "Cards/冥想不适时调整锚点或暂停练习.md"
+  - query: "冥想入门要怎么安排进度"
+    expected:
+      - "Cards/冥想的七天渐进入门计划.md"
+  - query: "冥想能治好失眠吗"
+    expected:
+      - "Cards/冥想辅助睡眠的边界与求助信号.md"
+  - query: "怎么记录自己的睡眠变化"
+    expected:
+      - "Cards/用简易记录回顾冥想与睡眠变化.md"
+
+  # ── 休息与奖励 ──
+  - query: "怎么判断我是身体累还是脑子累"
+    expected:
+      - "Cards/按疲劳类型切换活动模式选择休息.md"
+  - query: "每天都该留多少时间休息"
+    expected:
+      - "Cards/分层次预留每天每周每月的恢复时间.md"
+  - query: "刷手机算休息吗"
+    expected:
+      - "Cards/避免把休息变成新的消耗.md"
+  - query: "为什么我总是选不出休息方式"
+    expected:
+      - "Cards/用可选清单与抽卡降低休息决策成本.md"
+  - query: "奖励该怎么定才有意义"
+    expected:
+      - "Cards/奖励要按心理重量设计并能兑现.md"
+  - query: "目标太模糊怎么衡量进度"
+    expected:
+      - "Cards/把结果目标转成可执行的投入承诺.md"
+  - query: "休息是不是需要先允许自己"
+    expected:
+      - "Cards/休息需要时间空间与心理许可.md"
+  - query: "怎么写自我关怀日记"
+    expected:
+      - "Cards/自我关怀日记的三步写法.md"
+
+  # ── 注意力 ──
+  - query: "通知太多怎么管"
+    expected:
+      - "Cards/所有通知收敛到单一出口以保护注意力.md"
+
+  # ── 长上下文与模型机制 ──
+  - query: "标称上下文窗口和实际能用的长度一样吗"
+    expected:
+      - "Cards/标称上下文窗口不等于有效上下文长度.md"
+  - query: "全注意力模型是不是就不会漏信息"
+    expected:
+      - "Cards/全注意力模型也可能出现长上下文位置偏差.md"
+  - query: "稀疏注意力是怎么省算力的"
+    expected:
+      - "Cards/稀疏注意力减少Token之间的直接连接.md"
+  - query: "稀疏注意力会漏掉重要信息吗"
+    expected:
+      - "Cards/稀疏注意力可能遗漏长上下文中的重要信息.md"
+  - query: "MoE 是怎么做到参数稀疏的"
+    expected:
+      - "Cards/MoE通过选择专家实现参数稀疏.md"
+  - query: "用了 MoE 就能读到更早的上下文吗"
+    expected:
+      - "Cards/MoE不直接决定历史Token的可访问范围.md"
+
+  # ── PAOS 与 Agent 架构 ──
+  - query: "个人 AI 操作系统的目标是什么"
+    expected:
+      - "Cards/个人AI操作系统的目标是可复用能力而非全能Agent.md"
+  - query: "个人 Agent 的意义在哪里"
+    expected:
+      - "Cards/个人Agent的价值在于扩展人的能力边界.md"
+  - query: "PAOS 适合什么场景，什么时候不需要"
+    expected:
+      - "Cards/PAOS的适用边界取决于是否需要常驻与外部集成.md"
+  - query: "怎么从小系统开始搭"
+    expected:
+      - "Cards/从最小可用系统逐步扩展PAOS.md"
+  - query: "轻量 Agent 和重量级 Agent 怎么选"
+    expected:
+      - "Cards/按任务复杂度选择轻量或重量级Agent运行时.md"
+  - query: "上下文怎么分层加载"
+    expected:
+      - "Cards/分层上下文加载按摘要概览全文三级披露.md"
+  - query: "Context Hub 是不是必须只有一个知识库"
+    expected:
+      - "Cards/上下文中心未必等于单一知识库.md"
+
+  # ── 事件与后端 ──
+  - query: "事件处理为什么要先存再做"
+    expected:
+      - "Cards/Backend的Verify-Persist-Dispatch事件处理原则.md"
+  - query: "同一个任务被重复触发怎么避免"
+    expected:
+      - "Cards/事件级去重避免同一任务被并发处理.md"
+  - query: "为什么要记录所有事件"
+    expected:
+      - "Cards/事件全量留痕支撑复盘与决策.md"
+  - query: "事件路由该怎么设计"
+    expected:
+      - "Cards/统一事件格式与声明式规则表实现事件路由.md"
+  - query: "哪些任务该用确定性流程而不是 Agent"
+    expected:
+      - "Cards/确定性优先与基础设施和智能层解耦.md"
+  - query: "本地 Agent 怎么接收任务"
+    expected:
+      - "Cards/本地Agent通过反向长轮询接单.md"
+  - query: "为什么要把 Agent 放在内网"
+    expected:
+      - "Cards/把Agent留在内网本地的四个理由.md"
+  - query: "按模型能力分配任务是为什么"
+    expected:
+      - "Cards/按模型能力与成本给事件分配Agent.md"
+
+  # ── 权限、审批与主动性 ──
+  - query: "触发、执行和权限为什么要分开设计"
+    expected:
+      - "Cards/触发执行与权限是三个独立设计维度.md"
+  - query: "主动型 Agent 应该在什么范围内行动"
+    expected:
+      - "Cards/主动型Agent应在授权边界内观察建议与执行.md"
+  - query: "主动性和审批边界怎么划"
+    expected:
+      - "Cards/主动性与控制权之间的审批边界.md"
+  - query: "哪些操作需要人审批"
+    expected:
+      - "Cards/按代码风险分配人工审批人数.md"
+
+  # ── CI 与代码审查 ──
+  - query: "从写完代码到上线要经过哪些环节"
+    expected:
+      - "Cards/从编写代码到发布上线的交付流程.md"
+  - query: "哪些检查不需要 AI 来做"
+    expected:
+      - "Cards/CI承接无需AI的自动检查.md"
+  - query: "自建 CI 值得吗"
+    expected:
+      - "Cards/自建CI中台换成本与吞吐.md"
+  - query: "AI 代码审核应该只报什么问题"
+    expected:
+      - "Cards/AI代码审核的发现筛选与回应流程.md"
+  - query: "AI 审核最多审几轮"
+    expected:
+      - "Cards/限制AI审核轮数并聚焦新增改动.md"
+  - query: "怎么衡量 AI 审核的质量"
+    expected:
+      - "Cards/用真实缺陷与无问题PR评测AI审核质量.md"
+  - query: "代码审查为什么要独立上下文"
+    expected:
+      - "Cards/产品效果验证与独立上下文代码审查.md"
+  - query: "上线怎么做到安全可控"
+    expected:
+      - "Cards/合并后的安全交付采用功能开关与分阶段发布.md"
+  - query: "自动化开发里人还要负责什么"
+    expected:
+      - "Cards/自动化开发中人的关键职责.md"
+  - query: "可观测性和功能哪个优先"
+    expected:
+      - "Cards/可观测可维护优先于功能堆砌.md"
+  - query: "做决策的模型和执行模型要一样强吗"
+    expected:
+      - "Cards/做决策与管理的模型必须强于执行模型.md"
+  - query: "用户反馈该不该交给 AI 处理"
+    expected:
+      - "Cards/用户反馈亲自处理是最后的人味.md"
+
+  # ── Agent 经济与人的判断 ──
+  - query: "执行能力不值钱之后人靠什么"
+    expected:
+      - "Cards/执行能力增强后人类仍需信息价值与决策判断.md"
+  - query: "怎么避免太依赖 Agent 的判断"
+    expected:
+      - "Cards/通过独立判断与反例检验避免对Agent的过度依赖.md"
+  - query: "Agent 推荐商品时会不会有利益冲突"
+    expected:
+      - "Cards/Agent的商业利益冲突需要透明可验证与可迁移机制.md"
+  - query: "谁的注意力是瓶颈"
+    expected:
+      - "Cards/人的注意力是Agent系统的核心瓶颈.md"
+  - query: "交易规模能衡量 Agent 经济的价值吗"
+    expected:
+      - "Cards/Agent经济的价值不能只用交易规模衡量.md"
+  - query: "意图流动性是什么意思"
+    expected:
+      - "Cards/意图流动性使高交易成本压抑的需求得以实现.md"
+
+  # ── 卡片方法 ──
+  - query: "Skill 和普通提示词有什么区别"
+    expected:
+      - "Cards/Skill是任务SOP与执行逻辑的解耦层.md"
+  - query: "为什么我总是选不出休息方式"
+    expected:
+      - "Cards/用可选清单与抽卡降低休息决策成本.md"
+      - "Cards/休息需要时间空间与心理许可.md"
+    layer: knowledge
+  - query: "卡片笔记法怎么分工"
+    expected:
+      - "Memory/reference/卡片笔记法技能.md"
+    layer: memory
+
+  # ── 跨层 / 记忆层专项 ──
+  - query: "我平时用什么操作系统"
+    expected:
+      - "Memory/user/使用Windows11.md"
+    layer: memory
+  - query: "我的冥想习惯是什么"
+    expected:
+      - "Memory/user/冥想练习习惯.md"
+    layer: memory
+  - query: "回复我应该用什么风格"
+    expected:
+      - "Memory/feedback/结论先行不铺垫.md"
+    layer: memory
+  - query: "删除文件前要注意什么"
+    expected:
+      - "Memory/feedback/红线操作先确认.md"
+    layer: memory
+  - query: "我的项目进展到哪了"
+    expected:
+      - "Memory/project/北宇治部活记录.md"
+      - "Memory/project/PAOS个人AI操作系统.md"
+    layer: memory
+
+  # ── 口语化 / 精确字面 ──
+  - query: "我不想天天盯着手机回消息"
+    expected:
+      - "Cards/所有通知收敛到单一出口以保护注意力.md"
+  - query: "一躺下就开始想明天的事"
+    expected:
+      - "Cards/睡前通过记录待办减轻记忆负担.md"
+  - query: "Verify-Persist-Dispatch"
+    expected:
+      - "Cards/Backend的Verify-Persist-Dispatch事件处理原则.md"
+  - query: "Lost in the Middle"
+    expected:
+      - "Cards/全注意力模型也可能出现长上下文位置偏差.md"
+  - query: "数据库只能加不能改"
+    expected:
+      - "Cards/Agent的权限止于提交PR.md"
+  - query: "功能开关怎么做灰度发布"
+    expected:
+      - "Cards/合并后的安全交付采用功能开关与分阶段发布.md"

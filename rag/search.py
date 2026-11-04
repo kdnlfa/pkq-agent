@@ -52,7 +52,8 @@ def metadata_matches(
     return True
 
 
-def make_snippet(text: str, limit: int = 240) -> str:
+def make_snippet(text: str, limit: int = 900) -> str:
+    """把 chunk 文本压成一行摘要。limit 由 search.snippet_chars 配置。"""
     body_lines = [
         line for line in text.splitlines() if not line.lstrip().startswith("#")
     ]
@@ -263,7 +264,10 @@ class Searcher:
                     "layer": metadata.get("layer", ""),
                     "type": metadata.get("type", ""),
                     "status": metadata.get("status", ""),
-                    "snippet": make_snippet(info.get("text", "")),
+                    "snippet": make_snippet(
+                        info.get("text", ""),
+                        int(self.cfg.get("search.snippet_chars", 900)),
+                    ),
                 }
             )
             path_counts[path] += 1

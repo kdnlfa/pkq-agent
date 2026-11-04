@@ -55,7 +55,9 @@ def main() -> int:
     for item in queries:
         query = item["query"]
         expected = item.get("expected", [])
-        results = searcher.search(query, top_k=args.top, layer=args.layer)
+        # 每条查询可以单独指定检索层，不写则用命令行 --layer
+        layer = item.get("layer", args.layer)
+        results = searcher.search(query, top_k=args.top, layer=layer)
         paths = [r["path"] for r in results]
 
         rank = None
@@ -70,7 +72,8 @@ def main() -> int:
         hit_label = "✓" if rank else "✗"
         rank_label = str(rank) if rank else "-"
         expected_label = expected[0] if expected else ""
-        print(f"{query:<34} {hit_label:<6} {rank_label:<6} {expected_label}")
+        layer_tag = "" if layer == args.layer else f"  [{layer}]"
+        print(f"{query:<34} {hit_label:<6} {rank_label:<6} {expected_label}{layer_tag}")
 
         if args.verbose:
             for i, result in enumerate(results, start=1):
