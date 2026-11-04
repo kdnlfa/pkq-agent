@@ -62,7 +62,6 @@
 | 类型 | 目录 | 放什么 |
 |---|---|---|
 | `user` | `Memory/user/` | 关于用户的稳定事实与偏好（身份、语言、习惯、长期约束） |
-| `feedback` | `Memory/feedback/` | 用户对**自己工作方式**的纠正与确认，供 pkq 回答时参考；写清原因 |
 | `project` | `Memory/project/` | 进行中的项目、目标、状态、关键决策 |
 | `reference` | `Memory/reference/` | 外部资源指针（URL、文档、工具、仓库） |
 
@@ -169,7 +168,7 @@ uv run --directory rag python search.py "怎么安排休息" --layer knowledge -
 uv run --directory rag python eval.py
 ```
 
-检索参数：`--layer knowledge|memory|all`（默认 `knowledge`）、`--status draft|approved`、`--type user|feedback|project|reference`、`--top K`。
+检索参数：`--layer knowledge|memory|all`（默认 `knowledge`）、`--status draft|approved`、`--type user|project|reference`、`--top K`。
 同一个文件默认只返回一个 chunk（`search.max_per_path`）；需要看全文时按结果里的 `path` 打开文件。
 
 BM25 一路会用完整正文（并补上 frontmatter 里的标题和 description）打分，向量一路只用关键信息，两路 RRF 融合。所以结果里的 `snippet` 只是关键信息摘要，不是全文。

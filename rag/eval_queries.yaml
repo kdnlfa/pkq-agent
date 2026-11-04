@@ -267,14 +267,6 @@ queries:
     expected:
       - "Memory/user/冥想练习习惯.md"
     layer: memory
-  - query: "回复我应该用什么风格"
-    expected:
-      - "Memory/feedback/结论先行不铺垫.md"
-    layer: memory
-  - query: "删除文件前要注意什么"
-    expected:
-      - "Memory/feedback/红线操作先确认.md"
-    layer: memory
   - query: "我的项目进展到哪了"
     expected:
       - "Memory/project/北宇治部活记录.md"

@@ -9,11 +9,6 @@
 - [使用 Windows 11](Memory/user/使用Windows11.md) — 命令优先 Bash，其次 Windows Terminal
 - [冥想练习习惯](Memory/user/冥想练习习惯.md) — 用冥想改善睡眠，按七天渐进入门
 
-## Feedback
-
-- [结论先行不铺垫](Memory/feedback/结论先行不铺垫.md) — 先给结论和方案，再解释
-- [红线操作先确认](Memory/feedback/红线操作先确认.md) — 删除、密钥、推送、发布前必须停
-
 ## Project
 
 - [北宇治部活记录](Memory/project/北宇治部活记录.md) — AI 语音配音与视频系列项目
