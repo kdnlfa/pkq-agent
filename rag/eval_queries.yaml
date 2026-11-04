@@ -1,0 +1,37 @@
+queries:
+  - query: "冥想时走神了怎么办"
+    expected:
+      - "Cards/冥想的核心是察觉走神并温和返回.md"
+  - query: "休息和奖励有什么区别"
+    expected:
+      - "Cards/区分休息与奖励.md"
+  - query: "Agent 系统的注意力瓶颈是什么"
+    expected:
+      - "Cards/人的注意力是Agent系统的核心瓶颈.md"
+  - query: "Agent 能不能直接合并代码"
+    expected:
+      - "Cards/Agent的权限止于提交PR.md"
+  - query: "个人 Agent 的控制权归谁"
+    expected:
+      - "Cards/主权Agent的核心是用户控制权而非本地部署.md"
+  - query: "Skill 是什么，解决什么问题"
+    expected:
+      - "Cards/Skill是任务SOP与执行逻辑的解耦层.md"
+  - query: "PAOS 分几个工作层次"
+    expected:
+      - "Cards/PAOS的三个工作层次按启动方式划分.md"
+  - query: "上下文中心怎么分区"
+    expected:
+      - "Cards/Context Hub的分区结构.md"
+  - query: "什么时候上床睡觉"
+    expected:
+      - "Cards/按睡意安排上床与清醒时的离床.md"
+  - query: "合并前要做什么检查"
+    expected:
+      - "Cards/合并队列在合并前检查PR与主分支的组合.md"
+  - query: "轮询还是 webhook，怎么选"
+    expected:
+      - "Cards/定时轮询与Webhook的及时性取舍.md"
+  - query: "怎么减少重复请示"
+    expected:
+      - "Cards/用票拟式决策卡片与决策清单减少重复请示.md"

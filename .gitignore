@@ -1,0 +1,33 @@
+# 内容区：私有资料，只存本地
+# Cards/ 与 resource/ 是个人内容（知识卡与原始笔记），不提交到公开仓库。
+Cards/
+resource/
+
+# 其余个人内容
+Memory/
+图库/
+
+# RAG 生成物与运行环境
+rag/.index/
+rag/.venv/
+.venv/
+__pycache__/
+*.pyc
+
+# 备份快照（临时用，不进版本库）
+*.zip
+
+# Obsidian / 编辑器插件与工作区状态（第三方代码与本机路径，不入库）
+.obsidian/workspace.json
+.obsidian/workspace-mobile.json
+.obsidian/plugins/
+.obsidian/cache
+.claudian/
+
+# agent 历史文件
+.pkq_history
+
+# 本地环境
+.env
+.env.*
+!.env.example

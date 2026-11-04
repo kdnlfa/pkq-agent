@@ -1,0 +1,68 @@
+# 记忆库 RAG 配置。路径均相对于 Obsidian 库根目录。
+corpus:
+  # 全局排除：任何 collection 都不会索引这些路径
+  exclude:
+    - "rag/**"
+    - ".obsidian/**"
+    - ".claudian/**"
+    - ".pi/**"
+    - "resource/**"
+    - "图库/**"
+    - "**/__pycache__/**"
+    - "**/.venv/**"
+  # 入库前脱敏。命中后替换为 [REDACTED]，并在 ingest 报告中列出文件。
+  secret_patterns:
+    - "(?i)sk-[A-Za-z0-9_-]{20,}"
+    - "(?i)Bearer\\s+[A-Za-z0-9._\\-]{20,}"
+    - "(?i)(api[_-]?key\\s*[:=]\\s*)[A-Za-z0-9._\\-]{16,}"
+
+collections:
+  knowledge:
+    # 只索引卡片。resource/ 里的原始资料是卡片的原材料，拆完之后不再单独入库；
+    # 卡片正文的「背景与来源」已标注原文出处，需要原文时由 Agent 按路径直接读取。
+    includes:
+      - "Cards/**/*.md"
+    excludes: []
+  memory:
+    includes:
+      - "Memory/**/*.md"
+    excludes: []
+
+chunking:
+  # card: 一张卡一个 chunk，只嵌入关键信息（标题 + description + 核心内容）
+  # section: 按 Markdown 标题切成多个 chunk
+  mode: card
+  embed_max_chars: 450
+  # 以下参数仅在 section 模式下生效
+  max_chars: 800
+  min_chars: 40
+  overlap: 80
+
+embedding:
+  # provider: fastembed | openai-compatible
+  provider: fastembed
+  model: BAAI/bge-small-zh-v1.5
+  batch_size: 32
+  # BGE 中文模型建议在查询侧加指令前缀，文档侧不加
+  query_prefix: "为这个句子生成表示以用于检索相关文章："
+  document_prefix: ""
+  hf_endpoint: "https://hf-mirror.com"
+
+  # 切换到 API 时取消下面的注释，并把 provider 改为 openai-compatible
+  # base_url: "https://api.openai.com/v1"
+  # api_key_env: "OPENAI_API_KEY"
+  # model: "text-embedding-3-small"
+  # query_prefix: ""
+  # document_prefix: ""
+
+store:
+  path: "rag/.index/chroma"
+
+search:
+  top_k: 8
+  candidates: 30
+  rrf_k: 60
+  bm25_weight: 0.4
+  dense_weight: 0.6
+  # 同一个文件最多保留几个 chunk；Agent 拿到路径后会读全文，所以默认 1
+  max_per_path: 1
