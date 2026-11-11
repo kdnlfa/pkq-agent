@@ -34,12 +34,12 @@
 `resource/` 里的长文、对话记录、视频笔记是卡片的原材料。卡片拆完之后不再重复索引；
 卡片正文的「背景与来源」已标注出处，需要原文时由 Agent 按路径直接读文件。
 
-**Git 只跟踪 `rag/` 代码与规则文档**，个人内容（卡片、记忆、原资料、图片）均未提交。
+Git 跟踪代码、规则文档、部分 Obsidian 配置和根目录的 `MEMORY.md`。卡片、长期记忆正文、原始资料和图片留在本地。`MEMORY.md` 里的标题和链接会进入提交。
 
 ## 环境
 
-- Python 3.10+（当前机器为 3.12）
-- [uv](https://docs.astral.sh/uv/)（已安装）
+- Python 3.10+（本机的 `rag/.venv` 使用 3.11）
+- [uv](https://docs.astral.sh/uv/)。从库根目录运行 `uv sync --directory rag`，安装锁定的项目依赖。
 - 首次运行会自动下载 `google/embeddinggemma-300m`（约 1GB）。旧模型 `BAAI/bge-small-zh-v1.5` 一次只读 512 个字，装不下长卡片，已换掉
 
 ## 常用命令
@@ -96,8 +96,7 @@ Chroma（rag/.index/chroma）+ manifest（rag/.index/manifest.json，记录 sha2
 检索时并行走两路：
 
 1. 稠密向量 top N：只比对关键信息；
-2. BM25（jieba 中文分词）top N：**从磁盘读取完整正文**，并补上 frontmatter 里的标题和 description（卡片正文没有 H1，不补标题会漏掉标题命中）。
-
+2. BM25（jieba 中文分词）top N：对脱敏后的完整正文打分，并补上 frontmatter 里的标题和 description（卡片正文没有 H1，不补标题会漏掉标题命中）。两路的结果摘要均来自索引保存的文本。
 用 RRF 融合，按 `search.dense_weight` / `search.bm25_weight` 加权。最后按文件去重：同一个文件默认只保留一个 chunk（`search.max_per_path`），Agent 拿到 `path` 后再读整张卡。
 
 `--layer` 默认是 `knowledge`；查个人事实、偏好、项目时用 `--layer memory`；需要跨层时用 `--layer all`。
@@ -111,7 +110,7 @@ Chroma（rag/.index/chroma）+ manifest（rag/.index/manifest.json，记录 sha2
 | `card`（当前） | 一张卡一个 chunk，只嵌入标题 + description + 核心内容 | 卡片是独立知识单元，Agent 会按路径回读全文 |
 | `section` | 按 Markdown 标题切多个 chunk，每块带标题面包屑 | 长文档，需要精确到小节 |
 
-`chunking.embed_max_chars` 控制关键信息的截断长度；`max_chars` / `min_chars` / `overlap` 只在 `section` 模式下生效。切换模式会导致全量重建（配置签名变化）。
+`chunking.embed_max_chars` 控制 `card` 模式下关键信息的截断长度。`min_chars` 在两种模式下都会过滤过短的内容，`max_chars` 和 `overlap` 用于 `section` 模式。切换模式会触发全量重建。
 
 ## `pkq` 命令
 
@@ -120,6 +119,22 @@ Chroma（rag/.index/chroma）+ manifest（rag/.index/manifest.json，记录 sha2
 ```powershell
 New-Item -ItemType SymbolicLink -Path "$env:USERPROFILE\.local\bin\vaultrag" -Target "<新的 rag 目录路径>"
 ```
+
+直接运行 `pkq` 可进入交互模式，支持 `/reset`、`/index`、`/exit`。`pkq` 会把问题和用到的笔记内容交给配置的模型服务。所有工具返回给模型前都会按 `corpus.secret_patterns` 脱敏。
+
+### 它手上的工具
+
+| 工具 | 作用 | 边界 |
+|---|---|---|
+| `search_vault` | 混合检索 | 只读 |
+| `read_note` | 按路径读全文 | 只读，不截断 |
+| `write_card` | 在 `Cards/` 新建卡片 | 只新建、不覆盖；只收 `draft`；核心内容 ≤ 900 字 |
+| `edit_file` | 按原文精确替换 | 只能改 `Cards/` 下的 md；不能动 `status` |
+| `bash` | 在库根目录执行命令 | 只读命令直接跑，其余先问人；危险命令拒绝 |
+
+写卡会先过一遍格式检查（字段、status、标题与文件名、字数），不过就拒并退回理由。拆卡的规矩运行时从 `.pi/skills/card-writer/SKILL.md` 读入，不在代码里另外再存一份。
+
+`bash` 每条命令一个进程（`cd` 不延续到下次），默认超时 60 秒，超时连子进程一起杀；输出截断到 300 行 / 1.2 万字；所有命令与输出记在 `rag/.index/shell.log`。删除、关机、格式化、改注册表、`git push` 这类在禁止清单里，直接拒。
 
 ## 目录
 
@@ -131,7 +146,10 @@ New-Item -ItemType SymbolicLink -Path "$env:USERPROFILE\.local\bin\vaultrag" -Ta
 | `embeddings.py` | embedding provider 注册表 |
 | `store.py` | Chroma 封装 |
 | `manifest.py` | 增量索引清单 |
-| `ingest.py` | 建库 / 增量更新 |
+| `ingest.py` / `reindex.py` | 共用索引更新逻辑，分别用于命令行和交互式 `/index` |
+| `agent.py` | `pkq` 的对话循环：工具表、系统提示词、防打转 |
+| `filetools.py` | 写卡片与改文件的校验和落盘 |
+| `shelltool.py` | `bash` 工具：白名单、超时、截断、脱敏 |
 | `search.py` | 混合检索 CLI |
 | `eval.py` + `eval_queries.yaml` | 小评测集 |
 | `.index/` | 生成物，可随时删除重建 |
@@ -142,7 +160,7 @@ New-Item -ItemType SymbolicLink -Path "$env:USERPROFILE\.local\bin\vaultrag" -Ta
 - **接 API**：把 provider 改为 `openai-compatible`，填 `base_url`，用环境变量提供 key（不要把 key 写进配置）。
 - **加语料层**：在 `collections` 下新增一个 collection 和 include 规则，重跑 ingest。
 - **加 reranker**：在 `search.py` 的 RRF 之后接一个 rerank 函数即可，接口只需返回排序后的列表。
-- **接 MCP**：后续可把 `Searcher.search()` 与 `remember()` 包成 MCP 工具，供任意 Agent 调用。
+- **接 MCP**：后续可将现有的 `Searcher.search()` 包成检索工具，供其他 Agent 调用。
 
 ## 国内网络
 
