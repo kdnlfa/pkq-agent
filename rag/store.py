@@ -50,12 +50,22 @@ class VectorStore:
             )
 
     def delete_path(self, name: str, rel_path: str) -> None:
+        self.collection(name).delete(where={"path": rel_path})
+
+    def replace_path(
+        self,
+        name: str,
+        rel_path: str,
+        chunks: list[Chunk],
+        embeddings: list[list[float]],
+    ) -> None:
         collection = self.collection(name)
-        try:
-            collection.delete(where={"path": rel_path})
-        except Exception:
-            # 空集合或路径不存在时，Chroma 的不同版本行为不一致
-            pass
+        previous_ids = collection.get(where={"path": rel_path}, include=[])["ids"]
+        self.upsert(name, chunks, embeddings)
+        current_ids = {chunk.id for chunk in chunks}
+        stale_ids = [chunk_id for chunk_id in previous_ids if chunk_id not in current_ids]
+        if stale_ids:
+            collection.delete(ids=stale_ids)
 
     def count(self, name: str) -> int:
         return self.collection(name).count()

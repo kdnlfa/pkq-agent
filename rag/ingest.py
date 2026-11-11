@@ -6,11 +6,13 @@ import json
 import re
 import sys
 import time
+from collections.abc import Callable
+from dataclasses import dataclass, field
 from pathlib import Path
 
 from chunker import chunk_document
 from config import Config
-from corpus import read_text, scan_files
+from corpus import read_text, redact, scan_files
 from embeddings import create_embedder
 from manifest import Manifest
 from store import VectorStore
@@ -38,19 +40,6 @@ def config_signature(cfg: Config) -> str:
     return hashlib.sha256(raw).hexdigest()[:16]
 
 
-def mask_match(match: re.Match[str]) -> str:
-    prefix = match.group(1) if match.groups() else ""
-    return f"{prefix}[REDACTED]"
-
-
-def redact(text: str, patterns: list[re.Pattern[str]]) -> tuple[str, int]:
-    total = 0
-    for pattern in patterns:
-        text, count = pattern.subn(mask_match, text)
-        total += count
-    return text, total
-
-
 def build_arg_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="为记忆库建立/更新 RAG 索引")
     parser.add_argument("--config", help="配置文件路径", default=None)
@@ -59,47 +48,45 @@ def build_arg_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def main() -> int:
-    _utf8_stdout()
-    args = build_arg_parser().parse_args()
-    cfg = Config.load(args.config)
+@dataclass
+class IndexUpdate:
+    total_files: int = 0
+    changed_files: int = 0
+    removed_files: int = 0
+    total_chunks: int = 0
+    secret_files: list[str] = field(default_factory=list)
+    counts: dict[str, int] = field(default_factory=dict)
+    elapsed: float = 0.0
 
+
+def update_index(
+    cfg: Config, rebuild: bool = False, report: Callable[[str], None] | None = None
+) -> IndexUpdate:
     started = time.time()
+    result = IndexUpdate()
     signature = config_signature(cfg)
     manifest = Manifest.load(cfg.manifest_path)
 
-    rebuild_all = args.rebuild or (
-        manifest.config_signature not in ("", signature)
-        and manifest.config_signature != signature
-    )
-    if rebuild_all and manifest.files:
-        print("[ingest] 配置或分块参数变化，执行全量重建")
+    rebuild_all = rebuild or manifest.config_signature not in ("", signature)
+    if rebuild_all and report:
+        report("[ingest] 执行全量重建")
     manifest.config_signature = signature
 
     patterns = [re.compile(p) for p in cfg.secret_patterns]
     store = VectorStore(cfg.store_path)
     embedder = None
 
-    total_files = 0
-    changed_files = 0
-    removed_files = 0
-    total_chunks = 0
-    secret_files: list[str] = []
-
     for collection, spec in cfg.collections.items():
         includes = list(spec.get("includes", []))
         excludes = cfg.global_excludes + list(spec.get("excludes", []))
         found = scan_files(cfg.root, includes, excludes)
-        total_files += len(found)
+        result.total_files += len(found)
 
         if rebuild_all:
             store.collection(collection, reset=True)
             for key in list(manifest.files):
                 if key.startswith(f"{collection}::"):
                     del manifest.files[key]
-            # 重置后需要重新处理该 collection 下的全部文件
-            for rel in found:
-                manifest.files.pop(f"{collection}::{rel}", None)
 
         existing = {
             key: entry
@@ -118,7 +105,7 @@ def main() -> int:
             text = read_text(path)
             text, secret_count = redact(text, patterns)
             if secret_count:
-                secret_files.append(f"{rel}（{secret_count} 处）")
+                result.secret_files.append(f"{rel}（{secret_count} 处）")
 
             chunks = chunk_document(
                 rel_path=rel,
@@ -131,13 +118,14 @@ def main() -> int:
                 embed_max_chars=int(cfg.get("chunking.embed_max_chars", 450)),
             )
 
-            store.delete_path(collection, rel)
+            vectors = []
             if chunks:
                 if embedder is None:
-                    print(f"[ingest] 加载 embedding 模型：{cfg.get('embedding.model')}")
+                    if report:
+                        report(f"[ingest] 加载 embedding 模型：{cfg.get('embedding.model')}")
                     embedder = create_embedder(cfg)
                 vectors = embedder.embed_documents([c.text for c in chunks])
-                store.upsert(collection, chunks, vectors)
+            store.replace_path(collection, rel, chunks, vectors)
 
             manifest.files[key] = {
                 "path": rel,
@@ -146,38 +134,44 @@ def main() -> int:
                 "mtime": path.stat().st_mtime,
                 "chunks": [c.id for c in chunks],
             }
-            changed_files += 1
-            total_chunks += len(chunks)
-            if not args.quiet:
-                print(f"  + {rel}  ({len(chunks)} chunks)")
+            result.changed_files += 1
+            result.total_chunks += len(chunks)
+            if report:
+                report(f"  + {rel}  ({len(chunks)} chunks)")
 
         for key, entry in list(existing.items()):
             rel = entry["path"]
             if rel not in found:
                 store.delete_path(collection, rel)
                 del manifest.files[key]
-                removed_files += 1
-                if not args.quiet:
-                    print(f"  - {rel}  (removed)")
+                result.removed_files += 1
+                if report:
+                    report(f"  - {rel}  (removed)")
 
     manifest.save()
+    result.counts = {name: store.count(name) for name in cfg.collections}
+    result.elapsed = time.time() - started
+    return result
 
-    elapsed = time.time() - started
+
+def main() -> int:
+    _utf8_stdout()
+    args = build_arg_parser().parse_args()
+    cfg = Config.load(args.config)
+    result = update_index(cfg, rebuild=args.rebuild, report=None if args.quiet else print)
     print("\n[ingest] 完成")
-    print(f"  语料文件：{total_files}")
-    print(f"  变更文件：{changed_files}")
-    print(f"  删除文件：{removed_files}")
-    print(f"  新增 chunks：{total_chunks}")
-    counts = " / ".join(
-        f"{store.count(name)} {name}" for name in cfg.collections
-    )
+    print(f"  语料文件：{result.total_files}")
+    print(f"  变更文件：{result.changed_files}")
+    print(f"  删除文件：{result.removed_files}")
+    print(f"  新增 chunks：{result.total_chunks}")
+    counts = " / ".join(f"{count} {name}" for name, count in result.counts.items())
     print(f"  索引总量：{counts}")
-    print(f"  耗时：{elapsed:.1f}s")
-    if secret_files:
+    print(f"  耗时：{result.elapsed:.1f}s")
+    if result.secret_files:
         print("\n  [安全] 以下文件的密钥已脱敏，建议轮换：")
-        for item in sorted(set(secret_files)):
+        for item in sorted(set(result.secret_files)):
             print(f"    - {item}")
-    if changed_files == 0 and removed_files == 0:
+    if result.changed_files == 0 and result.removed_files == 0:
         print("  索引已是最新。")
     return 0
 

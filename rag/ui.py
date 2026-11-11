@@ -191,7 +191,7 @@ class StatusHandle:
 # prompt_toolkit：输入
 # ---------------------------------------------------------------------------
 
-COMMANDS = ["/reset", "/exit", "/quit", "/help"]
+COMMANDS = ["/index", "/reset", "/exit", "/quit", "/help"]
 
 
 def make_session(corpus_words: list[str] | None = None) -> Any:

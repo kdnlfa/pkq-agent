@@ -12,7 +12,7 @@ import jieba
 from rank_bm25 import BM25Okapi
 
 from config import Config
-from corpus import read_body
+from corpus import read_body, redact
 from embeddings import create_embedder
 from store import VectorStore
 
@@ -68,8 +68,11 @@ class Searcher:
         self.cfg = cfg
         self.store = VectorStore(cfg.store_path)
         self._embedder = None
-        # (collection, status, doc_type) -> 全量文件的 BM25 语料
-        self._corpus_cache: dict[tuple, tuple] = {}
+        self._secret_patterns = [re.compile(pattern) for pattern in cfg.secret_patterns]
+        self._bm25_cache: dict[
+            tuple[str, str | None, str | None],
+            tuple[BM25Okapi | None, list[dict[str, Any]]],
+        ] = {}
 
     @property
     def embedder(self):
@@ -79,42 +82,34 @@ class Searcher:
 
     def _bm25_corpus(
         self, collection: str, status: str | None, doc_type: str | None
-    ) -> tuple[list[str], list[list[str]], list[str], dict[str, list[str]], dict[str, dict]]:
+    ) -> tuple[BM25Okapi | None, list[dict[str, Any]]]:
         """按文件路径构建 BM25 语料。
 
         向量库里只存关键信息，BM25 需要完整正文，所以这里从 .md 文件读取。
         同一文件的多个 chunk 共享一条 BM25 记录，避免重复计分。
         """
         cache_key = (collection, status, doc_type)
-        if cache_key in self._corpus_cache:
-            return self._corpus_cache[cache_key]
+        if cache_key in self._bm25_cache:
+            return self._bm25_cache[cache_key]
 
         data = self.store.get_all(collection)
-        ids = list(data.get("ids") or [])
-        metadatas = list(data.get("metadatas") or [])
-
-        path_ids: dict[str, list[str]] = {}
-        meta_by_id: dict[str, dict] = {}
-        for chunk_id, metadata in zip(ids, metadatas):
+        rows: list[dict[str, Any]] = []
+        seen_paths: set[str] = set()
+        tokenized: list[list[str]] = []
+        for chunk_id, metadata, document in zip(
+            data.get("ids") or [], data.get("metadatas") or [], data.get("documents") or []
+        ):
             metadata = metadata or {}
             if not metadata_matches(metadata, status, doc_type):
                 continue
             path = metadata.get("path", "")
-            if not path:
+            if not path or path in seen_paths:
                 continue
-            path_ids.setdefault(path, []).append(chunk_id)
-            meta_by_id[chunk_id] = metadata
-
-        paths = list(path_ids)
-        texts: list[str] = []
-        tokenized: list[list[str]] = []
-        for path in paths:
-            metadata = meta_by_id[path_ids[path][0]]
+            seen_paths.add(path)
             try:
                 body = read_body(self.cfg.root / path)
             except OSError:
                 body = ""
-            texts.append(body)
             # 卡片正文里没有标题，标题和 description 只存在于 frontmatter。
             # BM25 必须看到它们，否则关键词命中标题的查询会漏。
             header = [
@@ -122,10 +117,18 @@ class Searcher:
                 str(metadata.get("description") or ""),
             ]
             indexed = "\n".join(part for part in header if part) + "\n" + body
-            tokenized.append(tokenize(indexed))
+            tokenized.append(tokenize(redact(indexed, self._secret_patterns)[0]))
+            rows.append({"id": chunk_id, "text": document or "", "metadata": metadata})
 
-        corpus = (paths, tokenized, texts, path_ids, meta_by_id)
-        self._corpus_cache[cache_key] = corpus
+        bm25 = BM25Okapi(tokenized) if any(tokenized) else None
+        if bm25 is not None:
+            # With a small filtered corpus, BM25 can give a real match a nonpositive IDF.
+            for token, idf in bm25.idf.items():
+                if idf <= 0:
+                    bm25.idf[token] = 1e-6
+
+        corpus = (bm25, rows)
+        self._bm25_cache[cache_key] = corpus
         return corpus
 
     def _bm25(
@@ -136,13 +139,10 @@ class Searcher:
         status: str | None,
         doc_type: str | None,
     ) -> list[dict[str, Any]]:
-        paths, tokenized, texts, path_ids, meta_by_id = self._bm25_corpus(
-            collection, status, doc_type
-        )
-        if not paths or not any(tokenized):
+        bm25, rows = self._bm25_corpus(collection, status, doc_type)
+        if bm25 is None:
             return []
 
-        bm25 = BM25Okapi(tokenized)
         scores = bm25.get_scores(query_tokens)
 
         ranked = sorted(
@@ -153,29 +153,20 @@ class Searcher:
         for j in ranked:
             if float(scores[j]) <= 0:
                 continue
-            path = paths[j]
-            chunk_id = path_ids[path][0]
-            results.append(
-                {
-                    "id": chunk_id,
-                    "text": texts[j],
-                    "metadata": meta_by_id[chunk_id],
-                    "bm25_score": float(scores[j]),
-                }
-            )
+            results.append(rows[j])
         return results
 
     def _dense(
         self,
         collection: str,
-        query: str,
+        query_embedding: list[float],
         candidates: int,
         status: str | None,
         doc_type: str | None,
     ) -> list[dict[str, Any]]:
         response = self.store.query(
             collection,
-            self.embedder.embed_query(query),
+            query_embedding,
             candidates,
             build_where(status, doc_type),
         )
@@ -222,9 +213,14 @@ class Searcher:
         sources: dict[str, set[str]] = defaultdict(set)
         infos: dict[str, dict[str, Any]] = {}
 
+        query_embedding = (
+            self.embedder.embed_query(query) if dense_weight > 0 and collections else None
+        )
         for collection in collections:
-            dense_results = self._dense(
-                collection, query, candidates, status, doc_type
+            dense_results = (
+                self._dense(collection, query_embedding, candidates, status, doc_type)
+                if query_embedding is not None
+                else []
             )
             for rank, item in enumerate(dense_results):
                 chunk_id = item["id"]
@@ -265,7 +261,7 @@ class Searcher:
                     "type": metadata.get("type", ""),
                     "status": metadata.get("status", ""),
                     "snippet": make_snippet(
-                        info.get("text", ""),
+                        redact(info.get("text", ""), self._secret_patterns)[0],
                         int(self.cfg.get("search.snippet_chars", 900)),
                     ),
                 }

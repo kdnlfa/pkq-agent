@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import fnmatch
+import re
 from pathlib import Path
 
 from chunker import parse_frontmatter
@@ -24,7 +25,7 @@ def scan_files(root: Path, includes: list[str], excludes: list[str]) -> dict[str
 
 
 def read_text(path: Path) -> str:
-    for encoding in ("utf-8", "utf-8-sig", "gb18030"):
+    for encoding in ("utf-8-sig", "gb18030"):
         try:
             return path.read_text(encoding=encoding)
         except UnicodeDecodeError:
@@ -35,3 +36,16 @@ def read_text(path: Path) -> str:
 def read_body(path: Path) -> str:
     """Read a markdown file and return the body without YAML frontmatter."""
     return parse_frontmatter(read_text(path))[1]
+
+
+def _mask_match(match: re.Match[str]) -> str:
+    prefix = match.group(1) if match.groups() else ""
+    return f"{prefix or ''}[REDACTED]"
+
+
+def redact(text: str, patterns: list[re.Pattern[str]]) -> tuple[str, int]:
+    total = 0
+    for pattern in patterns:
+        text, count = pattern.subn(_mask_match, text)
+        total += count
+    return text, total

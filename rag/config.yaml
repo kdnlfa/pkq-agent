@@ -35,7 +35,7 @@ chunking:
   # 索引文本长度上限（字）。配合 2048 token 的嵌入模型，
   # 能装下「核心内容 900 字 + 标题描述」的完整内容。
   embed_max_chars: 1000
-  # 以下参数仅在 section 模式下生效
+  # max_chars 和 overlap 只用于 section 模式；min_chars 也会过滤过短的卡片摘要。
   max_chars: 800
   min_chars: 40
   overlap: 80
